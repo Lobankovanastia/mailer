@@ -41,7 +41,7 @@ class Envelope {
         var fromData = _sanitizeEmail(from);
 
         if (fromName != null) {
-          fromData = '$fromName <$fromData>';
+          fromData = '${_sanitizeName(fromName)} <$fromData>';
         }
 
         buffer.write('From: $fromData\n');
@@ -51,7 +51,7 @@ class Envelope {
         var replyToData = _sanitizeEmail(replyTo);
 
         if (replyToName != null) {
-          replyToData = '$replyToName <$replyToData>';
+          replyToData = '${_sanitizeName(replyToName)} <$replyToData>';
         }
 
         buffer.write('Reply-To: $replyToData\n');
@@ -61,7 +61,7 @@ class Envelope {
         var senderData = _sanitizeEmail(sender);
 
         if (senderName != null) {
-          senderData = '$senderName <$senderData>';
+          senderData = '${_sanitizeName(senderName)} <$senderData>';
         }
 
         buffer.write('Sender: $senderData\n');

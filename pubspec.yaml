@@ -1,5 +1,5 @@
 name: mailer2
-version: 0.8.12+1
+version: 0.8.12+2
 description: >
   A temporary fork of Kai Sellgren's Mailer (https://github.com/kaisellgren/mailer)
   for aggressive support of replyTo and sender
