@@ -1,9 +1,13 @@
 Mailer
 ==
 
+> Note: this is a temporary fork of Kai Sellgren's Mailer (https://github.com/kaisellgren/mailer) for aggressive support of replyTo and sender
+
 **Mailer** is an easy to use library for composing and sending emails in Dart.
 
 Mailer supports file attachments, HTML emails and multiple transport methods.
+
+* [API Reference](http://www.dartdocs.org/documentation/mailer2/0.8.12+2)
 
 ## Features
 
@@ -28,7 +32,7 @@ Mailer supports file attachments, HTML emails and multiple transport methods.
 
 In this example we send an email using a Gmail account.
 ```dart
-import 'package:mailer/mailer.dart';
+import 'package:mailer2/mailer.dart';
 
 main() {
   // If you want to use an arbitrary SMTP server, go with `new SmtpOptions()`.
@@ -60,3 +64,7 @@ main() {
 
 ## License
 This library is licensed under MIT.
+
+##Who Uses
+
+* [Quire](https://quire.io) - a simple, collaborative, multi-level task management tool.
