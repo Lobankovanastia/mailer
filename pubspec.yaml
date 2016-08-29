@@ -1,12 +1,14 @@
 name: mailer2
-version: 0.8.12+2
+version: 1.1.0
 description: >
   A temporary fork of Kai Sellgren's Mailer (https://github.com/kaisellgren/mailer)
   for aggressive support of replyTo and sender
-author: Kai Sellgren <kaisellgren@gmail.com>
+authors:
+- Kai Sellgren <kaisellgren@gmail.com>
+- Dan Rubel <danrubel@google.com>
 homepage: http://github.com/kaisellgren/mailer
 environment:
-  sdk: '>=0.8.10+6 <2.0.0'
+  sdk: '>=1.17.0 <2.0.0'
 dev_dependencies:
   test: '>=0.9.0 <2.0.0'
 dependencies:
