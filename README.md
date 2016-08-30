@@ -71,6 +71,6 @@ main() {
 ## License
 This library is licensed under MIT.
 
-##Who Uses
+## Who Uses
 
 * [Quire](https://quire.io) - a simple, collaborative, multi-level task management tool.
