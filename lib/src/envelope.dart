@@ -42,7 +42,7 @@ class Envelope {
         var fromData = Address.sanitize(from);
 
         if (fromName != null) {
-          fromData = '${Address.sanitize(fromName)} <$fromData>';
+          fromData = '$fromName <$fromData>';
         }
 
         buffer.write('From: $fromData\n');
@@ -52,7 +52,7 @@ class Envelope {
         var replyToData = Address.sanitize(replyTo);
 
         if (replyToName != null) {
-          replyToData = '${Address.sanitize(replyToName)} <$replyToData>';
+          replyToData = '$replyToName <$replyToData>';
         }
 
         buffer.write('Reply-To: $replyToData\n');
@@ -62,7 +62,7 @@ class Envelope {
         var senderData = Address.sanitize(sender);
 
         if (senderName != null) {
-          senderData = '${Address.sanitize(senderName)} <$senderData>';
+          senderData = '$senderName <$senderData>';
         }
 
         buffer.write('Sender: $senderData\n');
