@@ -191,7 +191,7 @@ class Address {
 
     pos = _skipCFWS(str, pos, end);
     if (pos != end) {
-      throw new AddressInvalid("unexpected text after address");
+      throw new AddressInvalid("unexpected text after address: $str");
     }
   }
 
@@ -204,7 +204,7 @@ class Address {
   Address._parseMailbox(String str, int begin, int end) {
     _offset = _parseAddress(str, begin, end);
     if (!this.isMailbox) {
-      throw new AddressInvalid("nested groups are not permitted");
+      throw new AddressInvalid("nested groups are not permitted: $str, $begin, $end");
     }
   }
 
@@ -320,7 +320,7 @@ class Address {
           // below. Blocked by some character.
           if (pos < end) {
             throw new AddressInvalid(
-                "invalid address: unexpected character \"${str.substring(pos, pos+1)}\"");
+                "invalid address: unexpected character \"${str.substring(pos, pos+1)}\" in $str");
           } else {
             throw new AddressInvalid("invalid address");
           }
@@ -332,7 +332,7 @@ class Address {
 
       pos = _skipCFWS(str, pos, end);
       if (end <= pos) {
-        throw new AddressInvalid("incomplete address");
+        throw new AddressInvalid("incomplete address: $str");
       }
 
       switch (str.substring(pos, pos + 1)) {
@@ -344,7 +344,7 @@ class Address {
             // is for length != 1 instead of length.isNotEmpty.
             // The _parseSimpleAddress is used in another context, besides here,
             // which is why it is implemented that way.
-            throw new AddressInvalid("simple address is invalid");
+            throw new AddressInvalid("simple address is invalid: $str");
           }
           return _parseAddrSpec(str, pos, end, words);
 
@@ -363,7 +363,7 @@ class Address {
 
     // End of string reached, but still only parsed words.
     // Never got to a special character
-    throw new AddressInvalid("incomplete address");
+    throw new AddressInvalid("incomplete address: $str");
   }
 
   //----------------
