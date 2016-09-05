@@ -163,7 +163,8 @@ class SmtpClient {
       _connection.listen(_onData, onError: _onSendController.addError);
       _connection.done.catchError(_onSendController.addError);
       callback();
-    });
+    })
+    .catchError((ex, st) => _logger.warning("Unable to upgrade connection", ex, st));
   }
 
   void _actionGreeting(String message) {
@@ -294,7 +295,11 @@ class SmtpClient {
     if (message.startsWith('2') == false && message.startsWith('3') == false) throw 'Data command failed: $message';
 
     _currentAction = _actionFinishEnvelope;
-    _envelope.getContents().then(sendCommand);
+    _envelope.getContents().then(sendCommand)
+    .catchError((ex, st) {
+      _logger.warning("Unable to send: $message", ex, st);
+      _onSendController?.addError(ex);
+    });
   }
 
   _actionFinishEnvelope(String message) {
