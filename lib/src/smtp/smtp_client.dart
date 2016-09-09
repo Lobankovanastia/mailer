@@ -297,7 +297,7 @@ class SmtpClient {
     _currentAction = _actionFinishEnvelope;
     _envelope.getContents().then(sendCommand)
     .catchError((ex, st) {
-      _logger.warning("Unable to send: $message", ex, st);
+      _logger.warning("Unable to send: ${_envelope.recipients}", ex, st);
       _onSendController.addError(ex);
     });
   }

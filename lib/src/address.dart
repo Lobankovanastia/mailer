@@ -180,7 +180,7 @@ class Address {
 
     var pos = _skipCFWS(str, 0, end);
     if (pos == end) {
-      throw new AddressInvalid("value is a blank string");
+      throw new AddressInvalid("value is a blank string: $str");
     }
 
     // Parse the address
@@ -320,7 +320,7 @@ class Address {
           // below. Blocked by some character.
           if (pos < end) {
             throw new AddressInvalid(
-                "invalid address: unexpected character \"${str.substring(pos, pos+1)}\" in $str");
+                "invalid address: unexpected character \"${str[pos]}\" in $str");
           } else {
             throw new AddressInvalid("invalid address");
           }
@@ -335,7 +335,7 @@ class Address {
         throw new AddressInvalid("incomplete address: $str");
       }
 
-      switch (str.substring(pos, pos + 1)) {
+      switch (str[pos]) {
         case ".":
         case "@":
           if (words.length != 1) {
@@ -387,7 +387,7 @@ class Address {
 
     var pos = start;
     do {
-      switch (str.substring(pos, pos + 1)) {
+      switch (str[pos]) {
         case ".":
           // More words in the local-part
           pos = _parseWord(str, pos + 1, end);
@@ -422,7 +422,7 @@ class Address {
 
   int _parseAngleAddr(String str, int begin, int end, List<String> words) {
     assert(begin < end);
-    assert(str.substring(begin, begin + 1) == "<");
+    assert(str[begin] == "<");
 
     // angle-addr      =   [CFWS] "<" addr-spec ">" [CFWS] / obs-angle-addr
 
@@ -448,8 +448,7 @@ class Address {
       throw new AddressInvalid("incomplete route-addr address");
     }
 
-    if (str.substring(pos, pos + 1) == "@" ||
-        str.substring(pos, pos + 1) == ",") {
+    if (str[pos] == "@" || str[pos] == ",") {
       pos = _parseRoute(str, pos, end); // route is present
     } else {
       route = null; // route not present
@@ -473,7 +472,7 @@ class Address {
     if (end <= pos) {
       throw new AddressInvalid("incomplete route-addr address");
     }
-    if (str.substring(pos, pos + 1) != ">") {
+    if (str[pos] != ">") {
       throw new AddressInvalid("route-addr address missing \">\"");
     }
     pos++;
@@ -490,7 +489,7 @@ class Address {
 
   int _parseGroup(String str, int begin, int end, List<String> words) {
     assert(begin < end);
-    assert(str.substring(begin, begin + 1) == ":");
+    assert(str[begin] == ":");
 
     // Words are the displayName part of the: displayName ":" [#mailbox] ";"
 
@@ -511,7 +510,7 @@ class Address {
 
     do {
       if (pos < end) {
-        var char = str.substring(pos, pos + 1);
+        var char = str[pos];
         if (char == ";") {
           // end of group reached
           if (expectingMailbox != null && expectingMailbox) {
@@ -551,8 +550,7 @@ class Address {
   int _parseRoute(String str, int begin, int end) {
     assert(str != null);
     assert(begin < end);
-    assert(str.substring(begin, begin + 1) == "@" ||
-        str.substring(begin, begin + 1) == ",");
+    assert(str[begin] == "@" || str[begin] == ",");
 
     // obs-route       =   obs-domain-list ":"
     //
@@ -566,7 +564,7 @@ class Address {
     var expectingDomain = true;
 
     while (begin < end) {
-      switch (str.substring(pos, pos + 1)) {
+      switch (str[pos]) {
         case "@":
           if (!expectingDomain) {
             throw new AddressInvalid("route missing a comma");
@@ -616,7 +614,7 @@ class Address {
       pos = _skipCFWS(str, pos, end);
 
       int subdomainEnd;
-      if (str.substring(pos, pos + 1) != "[") {
+      if (str[pos] != "[") {
         subdomainEnd = _parseAtom(str, pos, end);
       } else {
         subdomainEnd = _parseDomainLiteral(str, pos, end);
@@ -636,7 +634,7 @@ class Address {
       if (end <= pos) {
         return pos; // end of domain, because no more text in str to process
       }
-      if (str.substring(pos, pos + 1) != ".") {
+      if (str[pos] != ".") {
         return pos; // end of domain, because there is not another sub-domain
       }
 
@@ -656,7 +654,7 @@ class Address {
   //----------------
 
   int _parseDomainLiteral(String str, int begin, int end) {
-    if (str.substring(begin, begin + 1) != "[") {
+    if (str[begin] != "[") {
       throw new AddressInvalid("domain-literal does not start with \"[\"");
     }
 
@@ -669,13 +667,13 @@ class Address {
         if (end < n) {
           throw new AddressInvalid("domain-literal not terminated");
         }
-        _tmp += str.substring(n, n + 1);
+        _tmp += str[n];
         n++;
       } else if (33 <= ch &&
           ch <= 126 &&
           "\\[]\n".indexOf(new String.fromCharCode(ch)) < 0) {
         // Valid character for an dtext
-        _tmp += str.substring(n, n + 1);
+        _tmp += str[n];
         n++;
       } else if (ch != "]".codeUnitAt(0)) {
         _tmp = str.substring(begin, n);
@@ -692,7 +690,7 @@ class Address {
 
   int _parseComment(String str, int begin, int end) {
     assert(begin < end);
-    assert(str.substring(begin, begin + 1) == "(");
+    assert(str[begin] == "(");
 
     // EBNF:
 
@@ -701,7 +699,7 @@ class Address {
     _tmp = "";
     var n = begin;
     while (n < end) {
-      switch (str.substring(n, n + 1)) {
+      switch (str[n]) {
         case "(":
           // Start of a comment
           nestingDepth++;
@@ -718,12 +716,12 @@ class Address {
           if (str.length < n) {
             throw new AddressInvalid("Unterminated comment");
           }
-          _tmp += str.substring(n + 1, n + 2);
+          _tmp += str[n + 1];
           n++;
           break;
         default:
           // Normal character
-          _tmp += str.substring(n, n + 1);
+          _tmp += str[n];
           break;
       }
       n++;
@@ -745,7 +743,7 @@ class Address {
     var pos = _skipCFWS(str, begin, end);
 
     if (pos < end) {
-      if (str.substring(pos, pos + 1) != "\"") {
+      if (str[pos] != "\"") {
         return _parseAtom(str, pos, end);
       } else {
         return _parseQuotedString(str, pos, end);
@@ -794,14 +792,14 @@ class Address {
   //----------------
   int _parseQuotedString(String str, int begin, int end) {
     assert(begin < end);
-    assert(str.substring(begin, begin + 1) == '"');
+    assert(str[begin] == '"');
 
     // quoted-string = [CFWS]  DQUOTE *([FWS] qcontent) [FWS] DQUOTE [CFWS]
 
     _tmp = "";
     var n = begin + 1;
     while (n < end) {
-      switch (str.substring(n, n + 1)) {
+      switch (str[n]) {
         case "\"":
           // End quote
           return _skipCFWS(str, n + 1, end);
@@ -811,12 +809,12 @@ class Address {
           if (str.length < n) {
             throw new AddressInvalid("Incomplete escape in quoted string");
           }
-          _tmp += str.substring(n + 1, n + 2);
+          _tmp += str[n + 1];
           n++;
           break;
         default:
           // Normal character
-          _tmp += str.substring(n, n + 1);
+          _tmp += str[n];
           break;
       }
       n++;
@@ -831,7 +829,7 @@ class Address {
     var pos = begin;
 
     while (pos < end) {
-      var ch = str.substring(pos, pos + 1);
+      var ch = str[pos];
 
       if (ch == " " || ch == "\t") {
         pos++;
@@ -961,16 +959,15 @@ class Address {
 
     if (str.length == 0) {
       needsQuoting = true; // empty
-    } else if (str.substring(0, 1) == " " || str.substring(0, 1) == "\t") {
+    } else if (str[0] == " " || str[0] == "\t") {
       needsQuoting = true; // starts with whitespace
-    } else if (str.substring(str.length - 1, str.length) == " " ||
-        str.substring(str.length - 1, str.length) == "\t") {
+    } else if (str[str.length - 1] == " " || str[str.length - 1] == "\t") {
       needsQuoting = true; // ends with whitespace
     }
 
     var prevCharWasWhitespace = false;
     for (int n = 0; n < str.length; n++) {
-      var ch = str.substring(n, n + 1);
+      var ch = str[n];
       var isWhiteSpace = ch == ' ' || ch == "\t";
       if (!_isAtomChar(str, n) && ! isWhiteSpace) {
         needsQuoting = true;
@@ -998,13 +995,13 @@ class Address {
       result = '"';
       for (int n = 0; n < str.length; n++) {
         if (_isAtomChar(str, n)) {
-          result += str.substring(n, n + 1);
+          result += str[n];
         } else {
-          var ch = str.substring(n, n + 1);
+          var ch = str[n];
           if (ch == '"' || ch == "\\" || ch == "\r") {
             result += "\\${ch}";
           } else {
-            result += str.substring(n, n + 1);
+            result += str[n];
           }
         }
       }
