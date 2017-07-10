@@ -14,8 +14,11 @@ class Envelope {
   List<Attachment> attachments = [];
   String from = 'anonymous@${Platform.localHostname}';
   String fromName;
+  @deprecated
   String replyTo;
+  @deprecated
   String replyToName;
+  List<String> replyTos;
   String sender;
   String senderName;
   String subject;
@@ -50,17 +53,6 @@ class Envelope {
         buffer.write('From: $fromData\r\n');
       }
 
-      if (replyTo != null) {
-        var replyToData = Address.sanitize(replyTo);
-
-        final name = sanitizeName(replyToName);
-        if (name != null) {
-          replyToData = '$name <$replyToData>';
-        }
-
-        buffer.write('Reply-To: $replyToData\n');
-      }
-
       if (sender != null) {
         var senderData = Address.sanitize(sender);
 
@@ -69,22 +61,36 @@ class Envelope {
           senderData = '$name <$senderData>';
         }
 
-        buffer.write('Sender: $senderData\n');
+        buffer.write('Sender: $senderData\r\n');
       }
 
-      if (recipients != null && !recipients.isEmpty) {
+      if (recipients != null && recipients.isNotEmpty) {
         var to = recipients.map(Address.sanitize).join(',');
         buffer.write('To: $to\r\n');
       }
 
-      if (ccRecipients != null && !ccRecipients.isEmpty) {
+      if (ccRecipients != null && ccRecipients.isNotEmpty) {
         var cc = ccRecipients.map(Address.sanitize).join(',');
         buffer.write('Cc: $cc\r\n');
       }
 
-      if (bccRecipients != null && !bccRecipients.isEmpty) {
+      if (bccRecipients != null && bccRecipients.isNotEmpty) {
         var bcc = bccRecipients.map(Address.sanitize).join(',');
         buffer.write('Bcc: $bcc\r\n');
+      }
+
+      if (replyTos != null && replyTos.isNotEmpty) {
+        var replyToData = replyTos.map(Address.sanitize).join(',');
+        buffer.write('Reply-To: $replyToData\r\n');
+      } else if (replyTo != null) { //backward compatible (TODO: remove)
+        var replyToData = Address.sanitize(replyTo);
+
+        final name = sanitizeName(replyToName);
+        if (name != null) {
+          replyToData = '$name <$replyToData>';
+        }
+
+        buffer.write('Reply-To: $replyToData\r\n');
       }
 
       // Since TimeZone is not implemented in DateFormat we need to use UTC for proper Date header generation time

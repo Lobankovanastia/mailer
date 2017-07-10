@@ -1,3 +1,8 @@
+## 1.1.5
+
+* Introduce replyTos
+* Deprecate replyTo and replyToName
+
 ## 1.1.4
 * Remove extra trailing `\r\n` from messages as some servers may interpret it as an empty
  command and send back an error code after success code
