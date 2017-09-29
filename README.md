@@ -7,7 +7,7 @@ Mailer
 
 Mailer supports file attachments, HTML emails and multiple transport methods.
 
-* [API Reference](http://www.dartdocs.org/documentation/mailer2/0.8.12+2)
+* [API Reference](http://www.dartdocs.org/documentation/mailer2/1.1.6)
 
 ## Features
 

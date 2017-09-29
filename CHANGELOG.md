@@ -1,3 +1,8 @@
+## 1.1.6
+
+* Introduce listUnsubscribe
+* Remove replyTo and replyToName
+
 ## 1.1.5
 
 * Introduce replyTos

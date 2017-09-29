@@ -14,16 +14,13 @@ class Envelope {
   List<Attachment> attachments = [];
   String from = 'anonymous@${Platform.localHostname}';
   String fromName;
-  @deprecated
-  String replyTo;
-  @deprecated
-  String replyToName;
   List<String> replyTos;
   String sender;
   String senderName;
   String subject;
   String text;
   String html;
+  String listUnsubscribe;
   String identityString = 'mailer';
   Encoding encoding = UTF8;
 
@@ -82,16 +79,10 @@ class Envelope {
       if (replyTos != null && replyTos.isNotEmpty) {
         var replyToData = replyTos.map(Address.sanitize).join(',');
         buffer.write('Reply-To: $replyToData\r\n');
-      } else if (replyTo != null) { //backward compatible (TODO: remove)
-        var replyToData = Address.sanitize(replyTo);
-
-        final name = sanitizeName(replyToName);
-        if (name != null) {
-          replyToData = '$name <$replyToData>';
-        }
-
-        buffer.write('Reply-To: $replyToData\r\n');
       }
+
+      if (listUnsubscribe != null && listUnsubscribe.isNotEmpty)
+        buffer.write('List-Unsubscribe: $listUnsubscribe\r\n');
 
       // Since TimeZone is not implemented in DateFormat we need to use UTC for proper Date header generation time
       buffer.write('Date: ' +
