@@ -103,6 +103,9 @@ class Envelope {
       buffer.write('Content-Type: multipart/$multipartType; ' +
           'boundary="$boundary"\r\n\r\n');
 
+//parts in a multipart MIME message should be in order of increasing preference
+//refer: https://stackoverflow.com/questions/5188605/gmail-displays-plain-text-email-instead-html
+
       // Insert text message.
       if (text != null) {
         buffer.write('--$boundary\r\n');
