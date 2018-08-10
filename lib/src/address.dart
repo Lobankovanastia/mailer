@@ -301,7 +301,7 @@ class Address {
 
     var words = new List<String>();
 
-    var prevPos = null; // to prevent infinite loop when no more words to parse
+    var prevPos; // to prevent infinite loop when no more words to parse
 
     // Parse words until we reach a special character.
 
@@ -506,7 +506,7 @@ class Address {
 
     groupMailboxes = new List<Address>();
 
-    var expectingMailbox = null; // null since mailbox-list can be empty
+    var expectingMailbox; // null since mailbox-list can be empty
 
     do {
       if (pos < end) {

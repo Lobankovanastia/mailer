@@ -17,7 +17,7 @@ class SmtpClient {
 
   Socket _connection;
 
-  bool _connectionOpen = false;
+  //bool _connectionOpen = false;
 
   /**
    * A list of supported authentication protocols.
@@ -68,7 +68,7 @@ class SmtpClient {
       _connection = socket;
       _connection.listen(_onData, onError: _onSendController.addError);
       _connection.done
-          .then((_) => _connectionOpen = false)
+          .then((_) => /*_connectionOpen =*/ false)
           .catchError(_onSendController.addError);
     });
   }
@@ -176,7 +176,7 @@ class SmtpClient {
       _connection = secured;
       _connection.listen(_onData, onError: _onSendController.addError);
       _connection.done
-          .then((_) => _connectionOpen = false)
+          .then((_) => /*_connectionOpen =*/ false)
           .catchError(_onSendController.addError);
       callback();
     })
