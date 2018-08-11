@@ -70,7 +70,7 @@ class AddressNotGroup extends AddressException {
 class Address {
   // Members
 
-  String _tmp; // internal use during parsing
+  StringBuffer _tmp; // internal use during parsing
   int _offset; // position reached when using the _parseMailbox constructor.
 
   //--------
@@ -312,7 +312,7 @@ class Address {
       var word = _tmp;
 
       if (word != null) {
-        words.add(word);
+        words.add(word.toString());
       } else {
         if (prevPos != null && prevPos == pos) {
           // Not the first time through, but there were no more words parsed
@@ -335,9 +335,9 @@ class Address {
         throw new AddressInvalid("incomplete address: $str");
       }
 
-      switch (str[pos]) {
-        case ".":
-        case "@":
+      switch (str.codeUnitAt(pos)) {
+        case $dot:
+        case $at:
           if (words.length != 1) {
             // Note: for a.b.c@d, only "a" is parsed here. The "b" and "c"
             // are to be parsed in _parseSimpleAddress. This is why this test
@@ -348,10 +348,10 @@ class Address {
           }
           return _parseAddrSpec(str, pos, end, words);
 
-        case "<":
+        case $lt:
           return _parseAngleAddr(str, pos, end, words);
 
-        case ":":
+        case $colon:
           return _parseGroup(str, pos, end, words);
 
         default:
@@ -387,8 +387,8 @@ class Address {
 
     var pos = start;
     do {
-      switch (str[pos]) {
-        case ".":
+      switch (str.codeUnitAt(pos)) {
+        case $dot:
           // More words in the local-part
           pos = _parseWord(str, pos + 1, end);
           var word = _tmp;
@@ -396,10 +396,10 @@ class Address {
             throw new AddressInvalid(
                 "local-part has unexpected final full-stop");
           }
-          words.add(word);
+          words.add(word.toString());
           break;
 
-        case "@":
+        case $at:
           // End of local-part reached
           localPart = words.join(".");
           // Parse the domain part
@@ -448,7 +448,8 @@ class Address {
       throw new AddressInvalid("incomplete route-addr address");
     }
 
-    if (str[pos] == "@" || str[pos] == ",") {
+    var ch;
+    if ((ch = str.codeUnitAt(pos)) == $at || ch == $comma) {
       pos = _parseRoute(str, pos, end); // route is present
     } else {
       route = null; // route not present
@@ -464,7 +465,7 @@ class Address {
       throw new AddressInvalid("addr-spec does not start with a word");
     }
 
-    pos = _parseAddrSpec(str, pos, end, [word]);
+    pos = _parseAddrSpec(str, pos, end, [word.toString()]);
 
     // The ">" terminating the route-addr
 
@@ -472,7 +473,7 @@ class Address {
     if (end <= pos) {
       throw new AddressInvalid("incomplete route-addr address");
     }
-    if (str[pos] != ">") {
+    if (str.codeUnitAt(pos) != $gt) {
       throw new AddressInvalid("route-addr address missing \">\"");
     }
     pos++;
@@ -508,39 +509,41 @@ class Address {
 
     var expectingMailbox; // null since mailbox-list can be empty
 
-    do {
-      if (pos < end) {
-        var char = str[pos];
-        if (char == ";") {
-          // end of group reached
-          if (expectingMailbox != null && expectingMailbox) {
-            throw new AddressInvalid("group has unexpected final comma");
-          }
-          return pos + 1;
-        } else if (char == ",") {
-          if (groupMailboxes.isEmpty) {
-            throw new AddressInvalid("group has unexpected initial comma");
-          }
-          if (expectingMailbox != null && expectingMailbox) {
-            throw new AddressInvalid("group has unexpected extra comma");
-          }
-          pos++; // step over the comma
-          expectingMailbox = true;
-        } else {
-          if (expectingMailbox != null && !expectingMailbox) {
-            throw new AddressInvalid("group is missing comma");
-          }
-          var mailbox = new Address._parseMailbox(str, pos, end);
-          groupMailboxes.add(mailbox);
-          pos = mailbox._offset;
-          expectingMailbox = false;
+    while (pos < end) {
+      switch (str.codeUnitAt(pos)) {
+      case $semicolon:
+        // end of group reached
+        if (expectingMailbox != null && expectingMailbox) {
+          throw new AddressInvalid("group has unexpected final comma");
         }
+        return pos + 1;
 
-        pos = _skipCFWS(str, pos, end);
+      case $comma:
+        if (groupMailboxes.isEmpty) {
+          throw new AddressInvalid("group has unexpected initial comma");
+        }
+        if (expectingMailbox != null && expectingMailbox) {
+          throw new AddressInvalid("group has unexpected extra comma");
+        }
+        pos++; // step over the comma
+        expectingMailbox = true;
+        break;
+
+      default:
+        if (expectingMailbox != null && !expectingMailbox) {
+          throw new AddressInvalid("group is missing comma");
+        }
+        var mailbox = new Address._parseMailbox(str, pos, end);
+        groupMailboxes.add(mailbox);
+        pos = mailbox._offset;
+        expectingMailbox = false;
+        break;
       }
-    } while (pos < end);
 
-    throw new AddressInvalid("group is incomplete");
+      pos = _skipCFWS(str, pos, end);
+    }
+
+    throw new AddressInvalid("group is incomplete: $str");
   }
 
   //----------------
@@ -564,8 +567,8 @@ class Address {
     var expectingDomain = true;
 
     while (begin < end) {
-      switch (str[pos]) {
-        case "@":
+      switch (str.codeUnitAt(pos)) {
+        case $at:
           if (!expectingDomain) {
             throw new AddressInvalid("route missing a comma");
           }
@@ -580,12 +583,12 @@ class Address {
           }
           break;
 
-        case ",":
+        case $comma:
           pos++;
           expectingDomain = true;
           break;
 
-        case ":":
+        case $colon:
           // End of route
           if (route.isEmpty) {
             throw new AddressInvalid("route must have at least one domain");
@@ -614,7 +617,7 @@ class Address {
       pos = _skipCFWS(str, pos, end);
 
       int subdomainEnd;
-      if (str[pos] != "[") {
+      if (str.codeUnitAt(pos) != $lbracket) {
         subdomainEnd = _parseAtom(str, pos, end);
       } else {
         subdomainEnd = _parseDomainLiteral(str, pos, end);
@@ -627,14 +630,14 @@ class Address {
           throw new AddressInvalid("domain has unexpected extra full-stop");
         }
       }
-      domain += _tmp;
+      domain += _tmp.toString();
       pos = subdomainEnd;
 
       pos = _skipCFWS(str, pos, end);
       if (end <= pos) {
         return pos; // end of domain, because no more text in str to process
       }
-      if (str[pos] != ".") {
+      if (str.codeUnitAt(pos) != $dot) {
         return pos; // end of domain, because there is not another sub-domain
       }
 
@@ -654,29 +657,29 @@ class Address {
   //----------------
 
   int _parseDomainLiteral(String str, int begin, int end) {
-    if (str[begin] != "[") {
+    if (str.codeUnitAt(begin) != $lbracket) {
       throw new AddressInvalid("domain-literal does not start with \"[\"");
     }
 
     var n = begin + 1;
     while (n < end) {
       var ch = str.codeUnitAt(n);
-      if (ch == "\\".codeUnitAt(0)) {
+      if (ch == $backslash) {
         // Quoted pair
         n++;
         if (end < n) {
           throw new AddressInvalid("domain-literal not terminated");
         }
-        _tmp += str[n];
+        _tmp.writeCharCode(str.codeUnitAt(n));
         n++;
       } else if (33 <= ch &&
-          ch <= 126 &&
-          "\\[]\n".indexOf(new String.fromCharCode(ch)) < 0) {
+          ch <= 126 && (ch != $backslash && ch != $lbracket &&
+            ch != $rbracket && ch != $lf)) {
         // Valid character for an dtext
-        _tmp += str[n];
+        _tmp.writeCharCode(ch);
         n++;
-      } else if (ch != "]".codeUnitAt(0)) {
-        _tmp = str.substring(begin, n);
+      } else if (ch != $rbracket) {
+        _tmp = new StringBuffer(str.substring(begin, n));
         return n;
       } else {
         throw new AddressInvalid("domain-literal not terminated with \"]\"");
@@ -696,32 +699,33 @@ class Address {
 
     var nestingDepth = 0;
 
-    _tmp = "";
+    _tmp = new StringBuffer();
     var n = begin;
     while (n < end) {
-      switch (str[n]) {
-        case "(":
+      final ch = str.codeUnitAt(n);
+      switch (ch) {
+        case $lparen:
           // Start of a comment
           nestingDepth++;
           break;
-        case ")":
+        case $rparen:
           // End of a comment
           nestingDepth--;
           if (nestingDepth == 0) {
             return n + 1;
           }
           break;
-        case "\\":
+        case $backslash:
           // Escaped character
           if (str.length < n) {
             throw new AddressInvalid("Unterminated comment");
           }
-          _tmp += str[n + 1];
+          _tmp.writeCharCode(str.codeUnitAt(n + 1));
           n++;
           break;
         default:
           // Normal character
-          _tmp += str[n];
+          _tmp.writeCharCode(ch);
           break;
       }
       n++;
@@ -743,7 +747,7 @@ class Address {
     var pos = _skipCFWS(str, begin, end);
 
     if (pos < end) {
-      if (str[pos] != "\"") {
+      if (str.codeUnitAt(pos) != $double_quote) {
         return _parseAtom(str, pos, end);
       } else {
         return _parseQuotedString(str, pos, end);
@@ -775,13 +779,13 @@ class Address {
 
     var n = begin;
     while (n < end) {
-      if (!_isAtomChar(str, n)) {
+      if (!_isAtomChar(str.codeUnitAt(n))) {
         break; // terminated by non-word character
       }
       n++;
     }
     if (begin < n) {
-      _tmp = str.substring(begin, n);
+      _tmp = new StringBuffer(str.substring(begin, n));
     } else {
       _tmp = null; // no word found
     }
@@ -796,25 +800,26 @@ class Address {
 
     // quoted-string = [CFWS]  DQUOTE *([FWS] qcontent) [FWS] DQUOTE [CFWS]
 
-    _tmp = "";
+    _tmp = new StringBuffer();
     var n = begin + 1;
     while (n < end) {
-      switch (str[n]) {
-        case "\"":
+      final ch = str.codeUnitAt(n);
+      switch (ch) {
+        case $double_quote:
           // End quote
           return _skipCFWS(str, n + 1, end);
 
-        case "\\":
+        case $backslash:
           // Escaped character
           if (str.length < n) {
             throw new AddressInvalid("Incomplete escape in quoted string");
           }
-          _tmp += str[n + 1];
+          _tmp.writeCharCode(str.codeUnitAt(n + 1));
           n++;
           break;
         default:
           // Normal character
-          _tmp += str[n];
+          _tmp.writeCharCode(ch);
           break;
       }
       n++;
@@ -829,11 +834,10 @@ class Address {
     var pos = begin;
 
     while (pos < end) {
-      var ch = str[pos];
-
-      if (ch == " " || ch == "\t") {
+      var ch = str.codeUnitAt(pos);
+      if (ch == $space || ch == $tab) {
         pos++;
-      } else if (ch == "(") {
+      } else if (ch == $lparen) {
         pos = _parseComment(str, pos, end);
       } else {
         break;
@@ -846,20 +850,15 @@ class Address {
   //----------------------------------------------------------------
   /// Tests if character at position [pos] in the [str] can appear in an atom.
 
-  static bool _isAtomChar(String str, int pos) {
+  static bool _isAtomChar(int ch) {
     // A character from the "atext" production in RFC #5822.
-
-    var ch = str.codeUnitAt(pos);
-    if ("a".codeUnitAt(0) <= ch && ch <= "z".codeUnitAt(0) ||
-        "A".codeUnitAt(0) <= ch && ch <= "Z".codeUnitAt(0) ||
-        "0".codeUnitAt(0) <= ch && ch <= "9".codeUnitAt(0) ||
-        "!#\$%&'*+-/=?^_`{|}~".indexOf(new String.fromCharCode(ch)) >= 0 ||
-        127 < ch) {
-      return true;
-    } else {
-      return false;
-    }
+    return ($a <= ch && ch <= $z) ||
+        ($A <= ch && ch <= $Z) ||
+        ($0 <= ch && ch <= $9) ||
+        _atomCharCodes.contains(ch) ||
+        127 < ch;
   }
+  static final Set<int> _atomCharCodes = "!#\$%&'*+-/=?^_`{|}~".codeUnits.toSet();
 
   //----------------------------------------------------------------
   /// Returns the simple-address in a mailbox address.
@@ -952,24 +951,19 @@ class Address {
   static String _formatAtomOrQuotedString(String str) {
     // Check if string contains characters that need to be quoted
 
-    var needsQuoting = false;
-
     // It also needs quoting if it starts or ends with whitespace
     // or contains multiple whitespaces in sequence
 
-    if (str.length == 0) {
-      needsQuoting = true; // empty
-    } else if (str[0] == " " || str[0] == "\t") {
-      needsQuoting = true; // starts with whitespace
-    } else if (str[str.length - 1] == " " || str[str.length - 1] == "\t") {
-      needsQuoting = true; // ends with whitespace
-    }
+    var ch;
+    var needsQuoting = str.isEmpty
+       || (ch = str.codeUnitAt(0)) == $space || ch == $tab // starts with whitespace
+       || (ch = str.codeUnitAt(str.length - 1)) == $space || ch == $tab; // ends with whitespace
 
     var prevCharWasWhitespace = false;
     for (int n = 0; n < str.length; n++) {
-      var ch = str[n];
-      var isWhiteSpace = ch == ' ' || ch == "\t";
-      if (!_isAtomChar(str, n) && ! isWhiteSpace) {
+      var ch = str.codeUnitAt(n);
+      var isWhiteSpace = ch == $space || ch == $tab;
+      if (!_isAtomChar(ch) && !isWhiteSpace) {
         needsQuoting = true;
         break;
       }
@@ -986,28 +980,25 @@ class Address {
 
     // Produce the localPart@domain
 
-    var result;
     if (!needsQuoting) {
       // atom
-      result = str;
+      return str;
     } else {
       // quoted-string
-      result = '"';
+      final result = new StringBuffer('"');
       for (int n = 0; n < str.length; n++) {
-        if (_isAtomChar(str, n)) {
-          result += str[n];
+        final ch = str.codeUnitAt(n);
+        if (_isAtomChar(ch)) {
+          result.writeCharCode(ch);
         } else {
-          var ch = str[n];
-          if (ch == '"' || ch == "\\" || ch == "\r") {
-            result += "\\${ch}";
-          } else {
-            result += str[n];
-          }
+          if (ch == $double_quote || ch == $backslash || ch == $cr)
+            result.write("\\");
+          result.writeCharCode(ch);
         }
       }
-      result += '"';
+      result.write('"');
+      return result.toString();
     }
-    return result;
   }
 
   //----------------------------------------------------------------
