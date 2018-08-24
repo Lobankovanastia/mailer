@@ -17,18 +17,16 @@ class SmtpClient {
 
   Socket _connection;
 
-  //bool _connectionOpen = false;
-
   /**
    * A list of supported authentication protocols.
    */
-  List<String> supportedAuthentications = [];
+  List<String> supportedAuthentications = <String>[];
 
   /**
    * When the connection is idling, it's ready to take in a new message.
    */
-  Stream<bool> onIdle;
-  StreamController<bool> _onIdleController = new StreamController<bool>();
+  Stream<dynamic> onIdle;
+  StreamController<dynamic> _onIdleController = new StreamController<dynamic>();
 
   /**
    * This stream emits whenever an email has been sent.
@@ -41,7 +39,7 @@ class SmtpClient {
   /**
    * Sometimes the response comes in pieces. We store each piece here.
    */
-  List<int> _remainder = [];
+  List<int> _remainder = <int>[];
 
   Envelope _envelope;
 
@@ -53,7 +51,7 @@ class SmtpClient {
   /**
    * Initializes a connection to the given server.
    */
-  Future _connect({secured: false}) {
+  Future _connect({bool secured: false}) {
     return new Future(() {
       // Secured connection was demanded by the user.
       if (secured || options.secured)
@@ -67,9 +65,7 @@ class SmtpClient {
 
       _connection = socket;
       _connection.listen(_onData, onError: _onSendController.addError);
-      _connection.done
-          .then((_) => /*_connectionOpen =*/ false)
-          .catchError(_onSendController.addError);
+      _connection.done.catchError(_onSendController.addError);
     });
   }
 
@@ -85,6 +81,12 @@ class SmtpClient {
       envelope._isDelivered = true;
 
       onIdle.listen((_) {
+        var allR = new Set<String>();
+        allR.addAll(envelope.recipients ?? []);
+        allR.addAll(envelope.ccRecipients ?? []);
+        allR.addAll(envelope.bccRecipients ?? []);
+        _allRecipients = allR.where((a) => a != null).toList(growable: false);
+
         _currentAction = _actionMail;
         sendCommand('MAIL FROM:<${Address.sanitize(_envelope.from)}>');
       });
@@ -169,22 +171,19 @@ class SmtpClient {
    * Upgrades the connection to use TLS.
    */
   void _upgradeConnection(callback) {
-    SecureSocket
-        .secure(_connection,
+    SecureSocket.secure(_connection,
             onBadCertificate: (_) => options.ignoreBadCertificate)
         .then((SecureSocket secured) {
       _connection = secured;
       _connection.listen(_onData, onError: _onSendController.addError);
-      _connection.done
-          .then((_) => /*_connectionOpen =*/ false)
-          .catchError(_onSendController.addError);
+      _connection.done.catchError(_onSendController.addError);
       callback();
-    })
-    .catchError((ex, st) => _logger.warning("Unable to upgrade connection", ex, st));
+    });
   }
 
   void _actionGreeting(String message) {
-    if (message.startsWith('220') == false) throw('Invalid greeting from server: $message');
+    if (message.startsWith('220') == false)
+      throw ('Invalid greeting from server: $message');
 
     _currentAction = _actionEHLO;
     sendCommand('EHLO ${options.name}');
@@ -223,7 +222,8 @@ class SmtpClient {
   }
 
   void _actionHELO(String message) {
-    if (message.startsWith('2') == false) throw('Invalid response for EHLO/HELO: $message');
+    if (message.startsWith('2') == false)
+      throw ('Invalid response for EHLO/HELO: $message');
 
     supportedAuthentications.add('LOGIN');
 
@@ -264,7 +264,7 @@ class SmtpClient {
     }
 
     _currentAction = _actionAuthenticateLoginPassword;
-    sendCommand(base64.encode(options.username.codeUnits));
+    sendCommand(convert.base64.encode(options.username.codeUnits));
   }
 
   void _actionAuthenticateLoginPassword(String message) {
@@ -273,7 +273,7 @@ class SmtpClient {
     }
 
     _currentAction = _actionAuthenticateComplete;
-    sendCommand(base64.encode(options.password.codeUnits));
+    sendCommand(convert.base64.encode(options.password.codeUnits));
   }
 
   void _actionAuthenticateComplete(String message) {
@@ -284,32 +284,33 @@ class SmtpClient {
   }
 
   var _recipientIndex = 0;
+  List<String> _allRecipients = [];
 
   void _actionMail(String message) {
     if (message.startsWith('2') == false)
       throw 'Mail from command failed: $message';
 
-    var recipient;
+    String recipient;
 
     // We are processing the last recipient.
-    if (_recipientIndex == _envelope.recipients.length - 1) {
+    if (_recipientIndex == _allRecipients.length - 1) {
       _recipientIndex = 0;
 
       _currentAction = _actionRecipient;
-      recipient = _envelope.recipients[_recipientIndex];
+      recipient = _allRecipients[_recipientIndex];
     }
 
     // There are more recipients to process. We need to send RCPT TO multiple times.
     else {
       _currentAction = _actionMail;
-      recipient = _envelope.recipients[++_recipientIndex];
+      recipient = _allRecipients[++_recipientIndex];
     }
 
     sendCommand('RCPT TO:<${Address.sanitize(recipient)}>');
   }
 
   void _actionRecipient(String message) {
-    if (message.startsWith('2') == false) throw('Recipient failure: $message');
+    if (message.startsWith('2') == false) throw ('Recipient failure: $message');
 
     _currentAction = _actionData;
     sendCommand('DATA');
@@ -321,11 +322,7 @@ class SmtpClient {
       throw 'Data command failed: $message';
 
     _currentAction = _actionFinishEnvelope;
-    _envelope.getContents().then(sendCommand)
-    .catchError((ex, st) {
-      _logger.warning("Unable to send: ${_envelope.recipients}", ex, st);
-      _onSendController.addError(ex);
-    });
+    _envelope.getContents().then(sendCommand);
   }
 
   _actionFinishEnvelope(String message) {

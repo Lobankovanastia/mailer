@@ -4,6 +4,9 @@
 * Remove replyTo and replyToName
 
 ## 1.1.5
+* Updated for Dart 2, including updating dependency versions.
+
+## 1.1.5
 
 * Introduce replyTos
 * Deprecate replyTo and replyToName

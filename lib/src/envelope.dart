@@ -71,11 +71,6 @@ class Envelope {
         buffer.write('Cc: $cc\r\n');
       }
 
-      if (bccRecipients != null && bccRecipients.isNotEmpty) {
-        var bcc = bccRecipients.map(Address.sanitize).join(',');
-        buffer.write('Bcc: $bcc\r\n');
-      }
-
       if (replyTos != null && replyTos.isNotEmpty) {
         var replyToData = replyTos.map(Address.sanitize).join(',');
         buffer.write('Reply-To: $replyToData\r\n');
@@ -85,16 +80,23 @@ class Envelope {
         buffer.write('List-Unsubscribe: $listUnsubscribe\r\n');
 
       // Since TimeZone is not implemented in DateFormat we need to use UTC for proper Date header generation time
+      var now = new DateTime.now();
       buffer.write('Date: ' +
           new DateFormat('EEE, dd MMM yyyy HH:mm:ss +0000')
-              .format(new DateTime.now().toUtc()) +
+              .format(now.toUtc()) +
           '\r\n');
       buffer.write('X-Mailer: Dart Mailer library\r\n');
       buffer.write('Mime-Version: 1.0\r\n');
 
+      // Thanks to https://github.com/kaisellgren/mailer/pull/20
+      // https://github.com/analogic for the Message-Id code!
+      int randomIdPart = new Random().nextInt((1 << 32) - 1);
+      buffer.write(
+          'Message-ID: <${now.millisecondsSinceEpoch}-${randomIdPart}@${Platform.localHostname}>\r\n');
+
       // Create boundary string.
       var boundary =
-          '$identityString-?=_${++_counter}-${new DateTime.now().millisecondsSinceEpoch}';
+          '$identityString-?=_${++_counter}-${now.millisecondsSinceEpoch}';
 
       // Alternative or mixed?
       var multipartType =
@@ -103,15 +105,18 @@ class Envelope {
       buffer.write('Content-Type: multipart/$multipartType; ' +
           'boundary="$boundary"\r\n\r\n');
 
-//parts in a multipart MIME message should be in order of increasing preference
-//refer: https://stackoverflow.com/questions/5188605/gmail-displays-plain-text-email-instead-html
+      var dotLinesReg = new RegExp(r'^(\..*)$', multiLine: true);
+      String stuffDots(String s) =>
+          s.replaceAllMapped(dotLinesReg, (match) => '.${match[1]}');
 
       // Insert text message.
       if (text != null) {
         buffer.write('--$boundary\r\n');
-        buffer.write('Content-Type: text/plain; charset="${encoding.name}"\r\n');
+        buffer
+            .write('Content-Type: text/plain; charset="${encoding.name}"\r\n');
         buffer.write('Content-Transfer-Encoding: 7bit\r\n\r\n');
-        buffer.write('$text\r\n\r\n'); // TODO: ensure wrapped to at least 1000
+        buffer.write(
+            '${stuffDots(text)}\r\n\r\n'); // TODO: ensure wrapped to at least 1000
       }
 
       // Insert HTML message.
@@ -119,16 +124,17 @@ class Envelope {
         buffer.write('--$boundary\r\n');
         buffer.write('Content-Type: text/html; charset="${encoding.name}"\r\n');
         buffer.write('Content-Transfer-Encoding: 7bit\r\n\r\n');
-        buffer.write('$html\r\n\r\n'); // TODO: ensure wrapped to at least 1000
+        buffer.write(
+            '${stuffDots(html)}\r\n\r\n'); // TODO: ensure wrapped to at least 1000
       }
 
       // Add all attachments.
-      return Future.forEach(attachments, (attachment) {
+      return Future.forEach(attachments, (Attachment attachment) {
         var filename = basename(attachment.file.path);
 
         return attachment.file.readAsBytes().then((bytes) {
           // Chunk'd (76 chars per line) base64 string, separated by "\r\n".
-          var contents = chunkEncodedBytes(base64.encode(bytes));
+          var contents = chunkEncodedBytes(convert.base64.encode(bytes));
 
           buffer.write('--$boundary\r\n');
           buffer.write(
@@ -139,8 +145,7 @@ class Envelope {
           buffer.write('$contents\r\n\r\n');
         });
       }).then((_) {
-        buffer.write(
-            '--$boundary--\r\n\r\n.');
+        buffer.write('--$boundary--\r\n\r\n.');
 
         return buffer.toString();
       });
