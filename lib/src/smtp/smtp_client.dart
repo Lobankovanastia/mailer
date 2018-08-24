@@ -51,83 +51,77 @@ class SmtpClient {
   /**
    * Initializes a connection to the given server.
    */
-  Future _connect({bool secured: false}) {
-    return new Future(() {
+  Future _connect({bool secured: false}) async {
+    _connection =
       // Secured connection was demanded by the user.
-      if (secured || options.secured)
-        return SecureSocket.connect(options.hostName, options.port,
-            onBadCertificate: (_) => options.ignoreBadCertificate);
+      secured || options.secured ?
+        await SecureSocket.connect(options.hostName, options.port,
+            onBadCertificate: (_) => options.ignoreBadCertificate):
+        await Socket.connect(options.hostName, options.port);
 
-      return Socket.connect(options.hostName, options.port);
-    }).then((socket) {
-      _logger
-          .finer("Connecting to ${options.hostName} at port ${options.port}.");
+    //_logger.finer("Connecting to ${options.hostName} at port ${options.port}.");
 
-      _connection = socket;
-      _connection.listen(_onData, onError: _onSendController.addError);
-      _connection.done.catchError(_onSendController.addError);
-    });
+    _connection.listen(_onData, onError: _onSendController.addError);
+    _connection.done.catchError(_onSendController.addError);
   }
 
   /**
    * Sends out an email.
    */
-  Future send(Envelope envelope) {
-    return new Future(() {
-      if (envelope._isDelivered) {
-        throw 'You cannot send an envelope that has already been sent! Make sure you are not reusing an existing envelope, but instead creating new envelopes.';
-      }
+  Future send(Envelope envelope) async {
+    if (envelope._isDelivered) {
+      throw 'You cannot send an envelope that has already been sent! Make sure you are not reusing an existing envelope, but instead creating new envelopes.';
+    }
 
-      envelope._isDelivered = true;
+    envelope._isDelivered = true;
 
-      onIdle.listen((_) {
-        var allR = new Set<String>();
-        allR.addAll(envelope.recipients ?? []);
-        allR.addAll(envelope.ccRecipients ?? []);
-        allR.addAll(envelope.bccRecipients ?? []);
-        _allRecipients = allR.where((a) => a != null).toList(growable: false);
+    onIdle.listen((_) {
+      var allR = new Set<String>();
+      allR.addAll(envelope.recipients ?? []);
+      allR.addAll(envelope.ccRecipients ?? []);
+      allR.addAll(envelope.bccRecipients ?? []);
+      _allRecipients = allR.where((a) => a != null).toList(growable: false);
 
-        _currentAction = _actionMail;
-        sendCommand('MAIL FROM:<${Address.sanitize(_envelope.from)}>');
-      });
-
-      _envelope = envelope;
-      _currentAction = _actionGreeting;
-
-      return _connect().then((_) {
-        var completer = new Completer();
-
-        var timeout = new Timer(const Duration(seconds: 60), () {
-          _close();
-          completer.completeError('Timed out sending an email.');
-        });
-
-        onSend.listen((Envelope mail) {
-          if (mail == envelope) {
-            timeout.cancel();
-            completer.complete(mail);
-          }
-        }, onError: (e) {
-          _close();
-          timeout.cancel();
-          if (!completer.isCompleted) {
-            completer.completeError('Failed to send an email: $e');
-            _logger.finest('Failed to send email', e);
-          } else {
-            _logger.finest('Failed after sending email', e);
-          }
-        }, cancelOnError: true);
-
-        return completer.future;
-      });
+      _currentAction = _actionMail;
+      sendCommand('MAIL FROM:<${Address.sanitize(_envelope.from)}>');
     });
+
+    _envelope = envelope;
+    _currentAction = _actionGreeting;
+
+    await _connect();
+
+    var completer = new Completer();
+
+    var timeout = new Timer(const Duration(seconds: 60), () {
+      _close();
+      completer.completeError('Timed out sending an email.');
+    });
+
+    onSend.listen((Envelope mail) {
+      if (mail == envelope) {
+        timeout.cancel();
+        completer.complete(mail);
+      }
+    }, onError: (e) {
+      _close();
+      timeout.cancel();
+      if (!completer.isCompleted) {
+        completer.completeError('Failed to send an email: $e');
+        _logger.finest('Failed to send email', e);
+      } else {
+        _logger.finest('Failed after sending email', e);
+      }
+    }, cancelOnError: true);
+
+    return completer.future;
   }
 
   /**
    * Sends a command to the SMTP server.
    */
   void sendCommand(String command) {
-    _logger.fine('> $command');
+    //_logger.fine('> $command');
     _connection.write('$command\r\n');
   }
 

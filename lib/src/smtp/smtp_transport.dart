@@ -5,11 +5,7 @@ class SmtpTransport extends Transport {
 
   SmtpTransport(this.options);
 
-  Future send(Envelope envelope) {
-    return new Future(() {
-      return new SmtpClient(options).send(envelope);
-    });
-  }
+  Future send(Envelope envelope) => new SmtpClient(options).send(envelope);
 
   Future sendAll(List<Envelope> envelopes) => Future.wait(envelopes.map(send));
 }
