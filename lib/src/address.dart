@@ -392,11 +392,8 @@ class Address {
           // More words in the local-part
           pos = _parseWord(str, pos + 1, end);
           var word = _tmp;
-          if (word == null) {
-            throw new AddressInvalid(
-                "local-part has unexpected final full-stop");
-          }
-          words.add(word.toString());
+          if (word != null)
+            words.add(word.toString());
           break;
 
         case $at:

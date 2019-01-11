@@ -1,3 +1,7 @@
+## 1.1.7
+
+* Allow local-part to ends with a dot
+
 ## 1.1.6
 
 * Introduce listUnsubscribe

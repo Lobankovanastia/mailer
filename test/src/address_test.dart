@@ -8,7 +8,6 @@ import 'package:mailer2/mailer.dart';
 
 void main() {
   //var testAddr = new Address("foo@bar");
-
   //----------------
   // Can parse valid addresses
 
@@ -95,6 +94,7 @@ void main() {
       '"John Smith" <j.smith@example.com>',
       "a@b",
       "a-b+c@example.com",
+      "a.b.@example.com", //allow to ends with dot
       '"much.more unusual"@example.com',
       '"very.unusual.@.unusual.com"@example.com',
       '"very.(),:;<>[]\\".VERY.\\"very@\\\\ \\"very\\".unusual"@strange.example.com',
@@ -131,8 +131,9 @@ void main() {
       "@b",
       "a@b@c",
       ".a@b",
-      "a.@b",
-      "a..b@c",
+//Some mail server accepts it
+//      "a.@b",
+//      "a..b@c",
       "a@.b",
       "a@b.",
       "a@b..c",
