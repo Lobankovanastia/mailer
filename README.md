@@ -3,7 +3,7 @@ Mailer
 
 > Note: this is a temporary fork of Kai Sellgren's Mailer (https://github.com/kaisellgren/mailer) for aggressive support of Reply-To and List-Unsubscribe
 
-* [API Reference](http://www.dartdocs.org/documentation/mailer2/1.2.4)
+* [API Reference](http://www.dartdocs.org/documentation/mailer2/1.2.5)
 
 ## Who Uses
 
