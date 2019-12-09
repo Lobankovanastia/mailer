@@ -64,6 +64,15 @@ void main() {
       expect(addr.route[1], equals("p2.example.com"));
     });
 
+    var str6 = ".a@b.com";
+    test(str6, () {
+      var addr = new Address(str6);
+      expect(addr.displayName, equals(null));
+      expect(addr.localPart, equals(".a"));
+      expect(addr.domain, equals("b.com"));
+      expect(addr.route, equals(null));
+    });
+
     // Example from RFC 822
     var strRFC822a = "\":sysmail\"@  Some-Group. Some-Org";
     test(strRFC822a, () {
@@ -130,7 +139,6 @@ void main() {
       "a@",
       "@b",
       "a@b@c",
-      ".a@b",
 //Some mail server accepts it
 //      "a.@b",
 //      "a..b@c",

@@ -337,6 +337,11 @@ class Address {
 
       switch (str.codeUnitAt(pos)) {
         case $dot:
+          //Note: email address starting with '.' is allowed
+          if (pos == 0) words.add('');
+          continue l_addrSpec;
+
+        l_addrSpec:
         case $at:
           if (words.length != 1) {
             // Note: for a.b.c@d, only "a" is parsed here. The "b" and "c"

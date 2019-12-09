@@ -1,6 +1,10 @@
+## 1.2.5
+
+* Allow local-part to start with a dot
+
 ## 1.2.4
 
-* Allow local-part to ends with a dot
+* Allow local-part to end with a dot
 
 ## 1.1.6
 
